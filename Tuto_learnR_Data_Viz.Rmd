@@ -1,0 +1,910 @@
+---
+title: "Introduction to Data Visualizatiion with R"
+subtitle: "<br>"
+author: "David Munoz Tord @munozt0"
+output: 
+   learnr::tutorial:
+       theme: "dark" 
+runtime: shiny_prerendered
+description: A beginner-friendly introduction to R and the tidyverse with sample data.
+---
+
+```{r setup, include=FALSE}
+library(ggplot2)
+library(ggplot2)
+library(gapminder)
+library(tidyverse)
+library(hrbrthemes) # for general style
+library(plotly)  
+library(ggridges)
+library(viridis)
+library(dygraphs)
+library(xts)  # To make the convertion data-frame / xts format
+library(lubridate) #
+knitr::opts_chunk$set(echo = FALSE, message=FALSE)
+
+```
+
+
+<style>
+
+
+.topicsList .topic {
+   background-color: #93a1a1 !important;
+}
+
+
+.topicsList .topic.current {
+  background-color: #1f7ab7 !important;
+}
+</style>
+
+## Welcome
+
+This practical will teach you the basics of `ggplot2`. It is split in 4 parts, each dedicated to a chart family:
+
+-   Correlation: scatterplot and bubble plot
+-   Distribution: histogram, density and boxplot.
+-   Ranking: barplot, lollipop and treemap.
+-   Evolution: line plot and area chart
+
+*You can type and run your own code in these boxes. I'll often give you some syntax to get started, and if you get stuck, you can hit the solution button. Don't add any code to the code editor here, just press the Run Code button.*
+
+```{r load, exercise = TRUE, exercise.eval = FALSE}
+# This is an example of a comment! Lines that start with # aren't run as code.
+# You don't have to type anything else here, we just load libraries (or also called packages) that we will need
+library(ggplot2)
+library(gapminder)
+library(tidyverse)
+```
+
+`ggplot2` is a very powerful package for data visualization with R. It is the main topic of this practical.
+
+`gapminder` is a package containing data on life expectancy, GDP per capita, and population by country.
+
+`tidyverse` is a package for all around data manipulation.
+
+```{r glimpse, exercise = TRUE, exercise.eval = FALSE}
+# You don't have to type anything else here.
+glimpse(gapminder)
+```
+
+Shown above is the `glimpse()` function. The bulk of the work in R is done with functions, which come from packages (as I mentioned, we're working mainly with the tidyverse package in this tutorial). You call a function with its name, like we just did with `glimpse()`, followed by its arguments in parentheses. This function only has one argument, which is the name of the data set itself, `gapminder`. You can also create your own functions, which is extremely useful but beyond the scope of this intro tutorial.
+
+The `glimpse()` function gives us a handy basic summary of our data. We know there are 2501 observations (or rows) and 46 variables (or columns), and we can see a little bit of the data. If we're only interested in seeing all the variable names, we can call the `names()` function.
+
+*The code block above used the `glimpse()` function. Here, try using the `names()` function, again with the name of the data set as the only argument.*
+
+```{r names, exercise = TRUE, exercise.eval = FALSE}
+
+```
+
+```{r names-solution}
+names(gapminder)
+```
+
+*How many rows do we have here? Try using the `nrow()` function, again with the name of the data set as the only argument.*
+
+```{r nrows, exercise = TRUE, exercise.eval = FALSE}
+
+```
+
+```{r nrows-solution}
+nrows(gapminder)
+```
+
+*How many years are available in this dataset? How many data-points for each year? Full code is provided for this question.*
+
+```{r ask4, message = FALSE, exercise = TRUE, exercise.eval = FALSE}
+# You don't have to type anything else here.
+# Number of different year?
+gapminder |>
+  select(year) |>
+  unique() |>
+  nrow()
+# or
+length(unique(gapminder$year))
+
+# Number of country available per year?
+gapminder |>
+  group_by(year) |>
+  summarize( n=n() )
+```
+
+## Correlation
+
+The first part of this practical will teach you how to build [scatterplots](https://www.data-to-viz.com/graph/scatter.html) and [bubble charts](https://www.data-to-viz.com/graph/bubble.html): the 2 most common chart types to visualize correlations.
+
+*Build a [scatterplot](https://www.r-graph-gallery.com/scatterplot) showing the relationship between `gdpPercap` and `lifeExp` in 1952. Use `geom_point()`. What do you observe?*
+
+```{r scatter, exercise = TRUE, exercise.eval = FALSE}
+#hint: use filter() to only select year==1952
+#hint2: `gdpPercap` is your x aestethic and `lifeExp` is your z aestethic
+```
+
+```{r scatter-solution}
+#nice!
+gapminder |>
+  filter(year=="1952") |>
+  ggplot( aes(x=gdpPercap, y=lifeExp)) +
+    geom_point()
+```
+
+*On the previous chart, one country is very different. Which one is it?*
+
+```{r filter, exercise = TRUE, exercise.eval = FALSE}
+#hint: check on last graphic which point is an outlier
+#hint2: use a filter logic to try to filter all other point and only keep this outlier
+#hint3: use > inside filter() to exclude points
+```
+
+```{r filter-solution}
+#Kuwait it is!
+gapminder |>
+  filter(year=="1952" & gdpPercap>90000) 
+```
+
+*Build the same chart, but get rid of this country. What trend do you observe? Does it make sense? What's missing? What could be better?*
+
+```{r exclude, exercise = TRUE, exercise.eval = FALSE}
+#hint: use a filter logic to try to filter out `Kuwait`
+#hint2: use !: (not equal) inside filter() to include all points but Kuwait
+```
+
+```{r exclude-solution, fig.show="asis",          fig.show="asis"}
+
+gapminder |>
+  filter(year=="1952" & country!="Kuwait") |>
+  ggplot( aes(x=gdpPercap, y=lifeExp)) +
+    geom_point() 
+```
+
+*Color the dots according to their `continent`.*
+
+```{r color, exercise = TRUE, exercise.eval = FALSE}
+#hint: in the `aes()` part of the code, use the `color` argument and assign it to `continent`
+```
+
+```{r color-solution}
+
+gapminder |>
+  filter(year=="1952" & country!="Kuwait") |>
+  ggplot( aes(x=gdpPercap, y=lifeExp, color=continent)) +
+    geom_point()
+```
+
+*Let's observe an additional variable: make the circle size proportionnal to the population (`pop`). How do you call this kind of chart?*
+
+```{r pop, exercise = TRUE, exercise.eval = FALSE}
+#hint:  This is done with the `size` argument of `aes()`.
+```
+
+```{r pop-solution}
+#It makes it a bubble plot! Which is just a scatter plot with a third numeric variable mapped to circle size. This page describes several methods to build one with R.
+gapminder |>
+  filter(year=="1952" & country!="Kuwait") |>
+  ggplot( aes(x=gdpPercap, y=lifeExp, color=continent, size=pop)) +
+    geom_point()
+
+```
+
+
+*You're in breezing through these questions? Try to do the following:  (1) custom the general appearance using the `theme_ipsum` of the `hrbrthemes` library. (2) add transparency to circles to limit overlapping impact. (3) sort your data by pop size to put the small circle on top of the chart, not hidden by big bubbles. (4) use the `ggplotly()` function of the `plotly` package to make this chart interactive*
+
+<!-- # ```{r interactive, exercise = TRUE, exercise.eval = FALSE, warning=FALSE} -->
+<!-- # #hint: load hrbrthemes and plotly -->
+<!-- # #hint2: use the `alpha` argument inside geom_point() -->
+<!-- # #hint3: use arrange() and desc() to sort data -->
+<!-- # #hint4: use ggplotly to `plotlyfy` your ggplot object -->
+<!-- #  -->
+<!-- # ``` -->
+<!-- #  -->
+<!-- # ```{r interactive-solution, warning=FALSE} -->
+<!-- #  -->
+<!-- # # Additionnal packages: -->
+<!-- # library(hrbrthemes) # for general style -->
+<!-- # library(plotly)     # to make the chart interactive -->
+<!-- #  -->
+<!-- #  -->
+<!-- # # Chart -->
+<!-- # p <- gapminder |> # assign it for later -->
+<!-- #   filter(year=="1952" & country!="Kuwait") |> -->
+<!-- #   arrange(desc(pop)) |> -->
+<!-- #   ggplot( aes(x=gdpPercap, y=lifeExp, fill=continent, size=pop)) + -->
+<!-- #     geom_point(alpha=0.7, stroke="white", shape=21) + -->
+<!-- #     theme_ipsum() -->
+<!-- #  -->
+<!-- # # Interactive more -->
+<!-- # ggplotly(p) -->
+<!-- #  -->
+<!-- # ``` -->
+
+
+## Distribution
+
+This second part is dedicated to the visualization of distribution. It is split in 2 parts:
+
+- Visualizing one distribution
+- Comparing distribution for several groups or variables
+
+
+### Single distribution
+
+
+*The [example dataset](https://raw.githubusercontent.com/we-data-ch/ggplot_basic/master/DATA/1_OneNum.csv) provides the AirBnb night prices of ~1000 appartments on the French Riviera. Data is stored on [Github](https://raw.githubusercontent.com/we-data-ch/ggplot_basic/master/DATA/1_OneNum.csv) and can be loaded in R as follow*
+
+```{r data, message = FALSE, exercise = TRUE, exercise.eval = FALSE}
+# You don't have to type anything else here.
+df <- read_csv("data/1_OneNum.csv")
+```
+
+
+
+*How many rows in the dataset? (use `nrow()`) What is the min? The max? (use `summary()`). Do you see anything weird? What kind of chart would you build to visualize this kind of data?*
+
+```{r summa, exercise = TRUE,  exercise.setup = "data", exercise.eval = FALSE}
+#hint: use nrow() and summary()
+
+```
+
+```{r summa-solution}
+nrow(df)
+summary(df)
+#only one column!
+
+```
+
+
+*Build a histogram of the data with `geom_histogram()`. Are you happy with the output? How can we improve it?*
+
+```{r hist, exercise = TRUE, exercise.setup = "data", exercise.eval = FALSE}
+#hint: use geom_histogram() and `price` as your x aestethic 
+
+```
+
+```{r hist-solution, warning = FALSE, message = FALSE}
+
+df |>
+  ggplot( aes(x=price)) +
+    geom_histogram()
+#not vert centered, because outlier ?
+```
+
+*Build a histogram without prices over 1500 euros. `ggplot2` displays a warning message, why? What does it mean? *
+
+```{r hist1500, exercise.setup = "data", exercise = TRUE, exercise.eval = FALSE}
+#hint: use filter() logic with <
+
+```
+
+```{r hist1500-solution}
+df |>
+  filter(price<1500) |>
+  ggplot( aes(x=price)) +
+    geom_histogram()
+```
+
+
+*Build the histogram with different values of `binwidth`, for prices <400. What do you observe? Is it important to play with this parameter?*
+
+```{r histbw, exercise.setup = "data",exercise = TRUE, exercise.eval = FALSE}
+#hint: use binwidth within geom_histogram()
+
+```
+
+```{r histbw-solution}
+df |>
+  filter(price<400) |>
+  ggplot( aes(x=price)) +
+    geom_histogram(binwidth = 2)
+```
+
+
+*Use `geom_density()` to build a green density chart. Check the effect of changing its binwidth (bw here) using different values.*
+
+```{r dens, exercise.setup = "data", exercise = TRUE, exercise.eval = FALSE}
+#hint: use bw within geom_density()
+#hint2: Use the `fill` and `color` argument to set the color.
+
+```
+
+```{r dens-solution}
+df |>
+  filter(price<1000) |>
+  ggplot( aes(x=price)) +
+    geom_density(color="green", fill="green", bw=5)
+
+#you can smooth or granularize your density plot by changing it's bw !
+```
+
+
+
+### Several distributions
+
+
+
+*Questions like What probability would you assign to the phrase `Highly likely` were asked. Answers were given in the range 0-100. It allows to understand how people perceive probability vocabulary. Data is stored on [Github](https://raw.githubusercontent.com/we-data-ch/ggplot_basic/master/DATA/probability.csv) and can be loaded in `R` as follow*
+
+```{r dataProb, message = FALSE, exercise = TRUE, exercise.eval = FALSE}
+# You don't have to type anything else here.
+df <- read_csv("data/probability.csv")
+
+```
+
+
+
+*As usual, check data main features with `nrow()`, but this time check also occurences with `table()`.*
+
+```{r table, exercise.setup = "dataProb", exercise = TRUE, exercise.eval = FALSE}
+#hint: use nrow() and table()
+
+```
+
+```{r table-solution}
+# Data size
+nrow(df)
+
+# occurence of each word:
+table(df$text)
+```
+
+
+
+*What kind of chart would you do to compare the 8 categories?*
+
+```{r box, exercise.setup = "dataProb", exercise = TRUE, exercise.eval = FALSE}
+#hint: just think about it and look if the solution corresponds to what you think
+
+```
+
+```{r box-solution}
+cat("A boxplot !")
+```
+
+
+*Build a boxplot using the default options of `geom_boxplot()`*
+
+```{r boxplot, exercise.setup = "dataProb",  exercise = TRUE, exercise.eval = FALSE}
+#hint: use geom_boxplot()
+#hint2: use test as x aes(), value as y aes() and text ad fill aes()
+
+```
+
+```{r boxplot-solution}
+ggplot(df, aes(x=text, y=value, fill=text)) +
+    geom_boxplot() 
+```
+
+What do you observe? Can you improve this chart? What would you change? Do you remind what the different parts of the box mean?
+
+
+
+*Apply the following modifications to the previous boxplot: (1) Order groups by increasing median of `value`. This is done thanks to the `forcats` package. Code is provided. (2) Flip X and Y axis (`coord_flip()`). (3) Get rid of the legend (`theme`)*
+
+
+```{r boxplot2, exercise.setup = "dataProb", exercise = TRUE, exercise.eval = FALSE}
+#hint: use `fct_reorder` from `forcats` to reorder 
+#hint2: use coord_flip() to flip coordinates
+#hint3: use legend.position = "none" within theme()
+
+```
+
+```{r boxplot2-solution}
+# Library forcats to reorder df
+# Reorder df
+df <- df |>
+  mutate(text = fct_reorder(text, value, .fun = median))
+
+# Reorder data
+df |>
+  ggplot(aes(x=text, y=value, fill=text)) +
+    geom_boxplot() +
+    theme(
+      legend.position = "none"
+    ) +
+    coord_flip()
+```
+
+
+
+*Apply the following modifications to the previous boxplot: (1) Order groups by increasing median of `value`. This is done thanks to the `forcats` package. Code is provided. (2) Flip X and Y axis (`coord_flip()`). (3) Get rid of the legend (`theme`)*
+
+
+```{r boxplotX,  exercise.setup = "boxplot2", exercise = TRUE, exercise.eval = FALSE}
+#hint: use `fct_reorder` from `forcats` to reorder 
+#hint2: use coord_flip() to flip coordinates
+#hint3: use legend.position = "none" within theme()
+
+```
+
+```{r boxplotX-solution}
+
+df |>
+  ggplot(aes(x=text, y=value, fill=text)) +
+    geom_boxplot() +
+    theme(
+      legend.position = "none"
+    ) +
+    coord_flip()
+```
+
+*What is the main caveat with boxplot? How can we do better?*
+
+
+```{r ask,  exercise.setup = "boxplot2", exercise = TRUE, exercise.eval = FALSE}
+#hint: just think about it and look at solution
+
+```
+
+```{r ask-solution}
+cat('
+-   Boxplots hide the sample size of each group, show it with annotation or box width.
+
+-   Boxplots hide the underlying distribution. Use jitter if low number of data points, or use violin with bigger data.')
+```
+
+
+*Let's show individual data points using the `geom_jitter()` function. Explain what this function exactly does. Try to get a nice output using the `width`, `size`, `alpha` and `color` options. And remove the outliers from the boxplot (since we are plotting them with jitter instead. BONUS: color outliers red*
+
+
+```{r boxplot3, exercise.setup = "boxplot2", exercise = TRUE, exercise.eval = FALSE}
+#hint: use precedent plot
+#hint2: add a geom_jitter()
+#hint3: manually create new categorical variable that says if a point is an outlier or not
+
+```
+
+```{r boxplot3-solution}
+
+#create new variable
+df <- df |> group_by(text) |> filter(!is.na(value)) |> 
+  mutate(Outlier = ifelse(value > quantile(value, 0.75)+1.50*IQR(value),"Outlier","OK")) |>
+  mutate(Outlier = ifelse(value < quantile(value, 0.25)-1.50*IQR(value),"Outlier",Outlier))
+
+
+# Reorder df
+subset(df, Outlier == "OK")  |>
+  ggplot(aes(x=text, y=value, fill=text)) +
+    geom_boxplot(outlier.shape = NA) +
+    geom_jitter(color="black", width=.4, size=.5, alpha=.4) +
+    geom_jitter(inherit.aes = FALSE, data = subset(df, Outlier == "Outlier"), aes(x=text, y=value), color="red", width=.4, size=.5, alpha=.4)+
+    theme(
+      legend.position = "none"
+    ) +
+    coord_flip()
+```
+
+
+
+*Too easy? Try to do the following: (1) Build a violin plot with the `gapminder` data. (2) Find out how to add a black circle to represent the mean of each group and a line to represent errors bars.*
+
+
+```{r violin, exercise.setup = "boxplot2", exercise = TRUE, exercise.eval = FALSE}
+#hint: use geom_violin()
+#hint1: use x = continent  , y = lifeExp      , fill=continent form the gapminder data
+#hint2: use stat_summary to add stats on a plot
+#hint3: check which functions should be fed to fun.data argument of stat_summary
+#hint4: use  geom = "pointrange" inside of stat_summary
+
+```
+
+```{r violin-solution}
+gapminder |> 
+ggplot(aes(x = continent  , y = lifeExp      , fill=continent )) +
+  geom_violin(trim=FALSE) +
+  stat_summary(fun.data = "mean_cl_boot", geom = "pointrange", colour = "black") + 
+  theme(
+      legend.position = "none"
+    ) +
+    coord_flip()
+```
+
+
+
+*Still Too easy? Search on the internet on how to build a ridgeline chart.*
+
+
+```{r ridge, exercise.setup = "boxplot2", exercise = TRUE, exercise.eval = FALSE}
+#hint: use geom_density_ridges_gradient() from `ggridges` package
+#hint1: use x = lifeExp  , y =   continent    , fill=continent form the gapminder data
+
+```
+
+```{r ridge-solution}
+# library
+library(ggridges)
+library(viridis)
+
+# Plot
+ggplot(gapminder, aes(x = lifeExp, y = continent, fill = ..x..)) +
+  geom_density_ridges_gradient(scale = 3, rel_min_height = 0.01) +
+  scale_fill_viridis() +
+    theme(
+      legend.position="none",
+      panel.spacing = unit(0.1, "lines"),
+      strip.text.x = element_text(size = 8)
+    )
+```
+
+
+## Ranking
+
+
+*Let's talk about the quantity of weapons exported by the top 50 largest exporters in 2017 ([source](http://armstrade.sipri.org/armstrade/page/toplist.php)). The dataset is available on [github](https://raw.githubusercontent.com/we-data-ch/ggplot_basic/master/DATA/7_OneCatOneNum.csv). Load it in R:*
+
+```{r tes, exercise = TRUE, exercise.eval = FALSE}
+# You don't have to type anything else here.
+df <- read_csv("data/7_OneCatOneNum.csv")
+```
+
+
+
+*Have a quick look to the dataset. Describe it. What kind of chart can you build with this dataset? Which one would be the best in your opinion? What are the countries on top 5 of the ranking?*
+
+
+```{r datask, exercise.setup = "tes", exercise = TRUE, exercise.eval = FALSE}
+#hint: use nrow, arrange, head
+
+```
+
+```{r datask-solution}
+
+nrow(df)
+
+df |>
+  arrange(desc(Value)) |>
+  head(5)
+
+#use a bar plot
+```
+
+
+
+
+*Start with a basic barplot using `geom_bar()`.*
+
+<u>Note</u>: by default `geom_bar()` takes only one categorical variable as input, used for the `x` axis. It counts the number of cases at each x position and display it on the Y axis. In our case, we want to provide a `y` value for each group. This is why we need to specify `stat="identity"`.
+
+
+```{r identi, exercise.setup = "tes", exercise = TRUE, exercise.eval = FALSE}
+#hint: use geom_bar()
+
+```
+
+```{r identi-solution}
+df |>
+  ggplot( aes(x=Country, y=Value) ) +
+    geom_bar(stat="identity")
+
+```
+
+Not very useful right ?
+
+
+*Color all bars with the same color: `#69b3a2`. Don't like the color? Pick [another one](https://www.w3schools.com/colors/colors_picker.asp). Do you have to use `fill` or `color`? Why?*
+
+
+```{r colo,  exercise.setup = "tes", exercise = TRUE, exercise.eval = FALSE}
+#hint: use geom_bar()
+
+```
+
+```{r colo-solution}
+df |>
+  ggplot( aes(x=Country, y=Value) ) +
+    geom_bar(stat="identity", fill="#69b3a2")
+
+```
+
+Still can't see labels though...
+
+
+*Set a different color for each bar. Do you like the output? Is it useful? Do you understand the difference between adding an option inside or outside `aes()` ?*
+
+
+```{r fill,  exercise.setup = "tes", exercise = TRUE, exercise.eval = FALSE}
+#hint: use fill
+
+```
+
+```{r fill-solution}
+df |>
+  ggplot( aes(x=Country, y=Value, fill=Country) ) +
+    geom_bar(stat="identity")
+
+```
+
+But what about those damn labels ?
+
+
+
+*Try the following: (1) Use `coord_flip()` to get a horizontal version, (2) Reorder countries.*
+
+
+```{r rmna,  exercise.setup = "tes", exercise = TRUE, exercise.eval = FALSE}
+#hint: remove NAs
+#hint2: sort data with arrange
+#hint3: factorize `Country`
+#hint4: use coord_flip
+
+```
+
+```{r rmna-solution}
+df |>
+  filter(!is.na(Value)) |> 
+  arrange(Value) |>
+  mutate(Country=factor(Country, Country)) |>
+  ggplot( aes(x=Country, y=Value) ) +
+    geom_bar(stat="identity", fill="#69b3a2") +
+    coord_flip() +
+    xlab("")
+
+```
+
+
+*Try to do a lollipop plot now ! *
+
+A [lollipop plot](https://www.r-graph-gallery.com/lollipop-plot/) is used in the same conditions as a barplot. Build it with: (1) `geom_segment()` for the stems. Arguments needed are `x`, `xend`, `y` and `yend`. (2) `geom_point()` for the circles. Needs `x` and `y` only.
+
+
+```{r lolli,  exercise.setup = "tes", exercise = TRUE, exercise.eval = FALSE}
+#hint: copy the code for the last plot but use geom_segment instead of geom_bar
+#hint2: add xend=Country and yend=Value to geom_segment()
+
+```
+
+```{r lolli-solution}
+
+df |>
+  filter(!is.na(Value)) |>
+  arrange(Value) |>
+  mutate(Country=factor(Country, Country)) |>
+  ggplot( aes(x=Country, y=Value) ) +
+    geom_segment( aes(x=Country ,xend=Country, y=0, yend=Value), color="grey") +
+    geom_point(size=3, color="#69b3a2") +
+    coord_flip() +
+    xlab("")
+
+```
+
+
+*BONUS: Try the following: Improve the previous lollipop chart with the `theme_ipsum`. Be creative to make it even better! *
+
+
+
+```{r lol,  exercise.setup = "tes", exercise = TRUE, exercise.eval = FALSE}
+#hint: use treemap from the `treemap` library
+#hint2: remove NAs
+#check the treemap doc with help()
+
+```
+
+```{r lol-solution, warning=FALSE}
+
+# Package
+library(hrbrthemes)
+
+df <- na.omit(df) #just to plot here simpler
+
+
+df |>
+  arrange(Value) |>
+  mutate(Country=factor(Country, Country)) |>
+  ggplot( aes(x=Country, y=Value) ) +
+    geom_segment( aes(x=Country ,xend=Country, y=0, yend=Value), color="grey") +
+    geom_point(size=3, color="#69b3a2") +
+    coord_flip() +
+    xlab("") + 
+    theme_ipsum() # cool and nice theme
+```
+
+
+
+
+*Visit the [treemap](https://www.r-graph-gallery.com/treemap/) section of the R graph gallery. Apply this kind of chart to this last (weapon) dataset. *
+
+
+
+```{r tree,  exercise.setup = "tes", exercise = TRUE, exercise.eval = FALSE}
+#hint: use treemap from the `treemap` library
+#check the treemap doc with help()
+
+```
+
+```{r tree-solution, warning=FALSE}
+
+# Package
+library(treemap)
+
+# Plot
+treemap(df,
+            # data
+            index="Country",
+            vSize="Value",
+            type="index",
+            
+            # Main
+            title="",
+            palette="Dark2",
+
+            # Borders:
+            border.col=c("black"),             
+            border.lwds=1,                         
+        
+            # Labels
+            # fontsize.labels=0.5,
+            fontcolor.labels="white",
+            fontface.labels=1,            
+            bg.labels=c("transparent"),              
+            align.labels=c("left", "top"),                                  
+            overlap.labels=0.5,
+            inflate.labels=T# If true, labels are bigger when rectangle is bigger.
+            
+            )
+
+```
+
+
+
+*Ask google what a circular barchart is. What are the pros and cons of this chart compared to the classic barplot? Try to implement it with R and ggplot2.*
+
+
+
+```{r circ,  exercise.setup = "tes", exercise = TRUE, exercise.eval = FALSE}
+#hint: use treemap from the `treemap` library
+#hint2: remove NAs
+#check the treemap doc with help()
+
+```
+
+```{r circ-solution, warning=FALSE}
+
+
+# Order data
+tmp <- df |>
+  filter(!is.na(Value)) |>
+  arrange(desc(Value)) |>
+  mutate(Country=factor(Country, Country))
+
+# Set a number of 'empty bar'
+empty_bar=10
+
+# Add lines to the initial tmpset
+to_add = matrix(NA, empty_bar, ncol(tmp))
+colnames(to_add) = colnames(tmp)
+tmp=rbind(tmp, to_add)
+tmp$id=seq(1, nrow(tmp))
+
+# Get the name and the y position of each label
+label_tmp=tmp
+number_of_bar=nrow(label_tmp)
+angle= 90 - 360 * (label_tmp$id-0.5) /number_of_bar     # I substract 0.5 because the letter must have the angle of the center of the bars. Not extreme right(1) or extreme left (0)
+label_tmp$hjust<-ifelse( angle < -90, 1, 0)
+label_tmp$angle<-ifelse(angle < -90, angle+180, angle)
+label_tmp$Country <- gsub("United States", "US", label_tmp$Country)
+label_tmp$Country <- paste(label_tmp$Country, " (", label_tmp$Value,")", sep="")
+
+# Make the plot
+ggplot(tmp, aes(x=as.factor(id), y=Value)) +       # Note that id is a factor. If x is numeric, there is some space between the first bar
+  geom_bar(stat="identity", fill=alpha("#69b3a2", 0.8)) +
+  ylim(-7000,13000) +
+  theme_minimal() +
+  theme(
+    axis.text = element_blank(),
+    axis.title = element_blank(),
+    panel.grid = element_blank(),
+    plot.margin = unit(rep(-1,4), "cm") 
+  ) +
+  coord_polar(start = 0) + 
+  geom_text(data=label_tmp, aes(x=id, y=Value+200, label=Country ), color="black", fontface="bold",alpha=0.6, size=2.5, angle= label_tmp$angle, hjust=label_tmp$hjust, inherit.aes = FALSE ) 
+
+```
+
+
+## Timeseries
+
+
+*Let's consider the evolution of the [bitcoin](https://en.wikipedia.org/wiki/Bitcoin) price between April 2013 and April 2018. Data are stored on [github](https://raw.githubusercontent.com/we-data-ch/ggplot_basic/master/DATA/3_TwoNumOrdered.csv). Load the dataset using the following code,*
+
+```{r datTime, exercise = TRUE, exercise.eval = FALSE}
+# You don't have to type anything else here.
+df <- read_delim("data/3_TwoNumOrdered.csv", " ") # note here we use read_delim instead of read_csv because for some obscure reason the data is separated by spaces instead of commas.. That is life with data.
+```
+
+
+
+
+*Have a quick look to the dataset. Describe it. What kind of chart can you build with this dataset? What do you have to nake sure with dates specfically ?*
+
+
+```{r timeBit, exercise = TRUE, exercise.eval = FALSE, exercise.setup = "datTime"}
+#hint: use nrow, arrange, head
+
+```
+
+```{r timeBit-solution}
+
+nrow(df)
+
+head(df)
+
+str(df)
+
+#always check that the date colume is read as "date" and not as character
+#check this stupid read.table
+str(read.table("https://raw.githubusercontent.com/we-data-ch/ggplot_basic/master/DATA/3_TwoNumOrdered.csv"))
+
+#use a line plot
+
+```
+
+
+
+*Build a basic line chart showing the bitcoin price evolution using `geom_line()`.*
+
+
+
+```{r line, exercise.setup = "datTime", exercise = TRUE, exercise.eval = FALSE}
+#hint: use geom_line
+#hint2: x=date, y=value
+
+```
+
+```{r line-solution, warning=FALSE}
+df %>%
+  ggplot( aes(x=date, y=value)) +
+    geom_line(color="#69b3a2")
+```
+
+
+
+*Select the last 20 values using `tail()`. Build a connected lineplot using `geom_point()`, `geom_line()` and `geom_area()`.*
+
+
+
+```{r connect, exercise.setup = "datTime", exercise = TRUE, exercise.eval = FALSE}
+#hint: tail()
+#hint2: use geom `geom_point()`, `geom_line()` and `geom_area()`
+
+```
+
+```{r connect-solution, warning=FALSE}
+df |>
+  tail(20) |>
+  ggplot( aes(x=date, y=value)) +
+    geom_area(fill="#69b3a2", alpha=0.5) +
+    geom_line(color="#69b3a2") +
+    geom_point()
+```
+
+
+
+<!-- *Bonus: Visit the [time series](https://www.r-graph-gallery.com/time-series/) section of the R graph gallery. Try to use the HTML widget called `dygraph` to build an interactive version of this lineplot. * -->
+
+
+
+<!-- ```{r dygraphs, exercise.setup = "datTime", exercise = TRUE, exercise.eval = FALSE} -->
+<!-- #hint: dygraph form `dygraphs` -->
+<!-- #hint2: look at all the possible options -->
+
+<!-- ``` -->
+
+<!-- ```{r dygraphs-solution, exercise.setup = "datTime", warning=FALSE, exercise = TRUE, exercise.eval = FALSE} -->
+<!-- # Library -->
+<!-- library(dygraphs) -->
+<!-- library(xts)  # To make the convertion data-frame / xts format -->
+<!-- library(lubridate) #to work with date format -->
+
+<!-- # Then you can create the xts format -->
+<!-- don <- xts(x = df$value, order.by = df$date) -->
+
+<!-- # graph -->
+<!-- dygraph(don) |> -->
+<!--   dyOptions(labelsUTC = TRUE, fillGraph=TRUE, fillAlpha=0.1, drawGrid = FALSE, colors="#D8AE5A") |> -->
+<!--   dyRangeSelector() |> -->
+<!--   dyCrosshair(direction = "vertical") |> -->
+<!--   dyHighlight(highlightCircleSize = 5, highlightSeriesBackgroundAlpha = 0.2, hideOnMouseOut = FALSE)  |> -->
+<!--   dyRoller(rollPeriod = 1) -->
+<!-- ``` -->
+
+
